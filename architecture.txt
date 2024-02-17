@@ -1,0 +1,6 @@
+- agents as class instances
+- a message bus for communication between agents
+- logging and monitoring
+
+Communication Protocol
+- JSON / natural language

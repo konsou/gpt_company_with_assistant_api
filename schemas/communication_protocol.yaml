@@ -1,0 +1,39 @@
+openapi: 3.0.0
+info:
+  title: AI Agent Communication Protocol
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Message:
+      type: object
+      properties:
+        agent_id:
+          type: string
+          description: Unique identifier for each agent.
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp in ISO 8601 format.
+        type:
+          type: string
+          enum: [request, response, command]
+          description: Nature of the message.
+        content:
+          type: object
+          properties:
+            action:
+              type: string
+              description: Specific action the message pertains to.
+            parameters:
+              type: object
+              additionalProperties: true
+              description: Parameters for the action, allowing extension.
+            message:
+              type: string
+              description: Natural language instruction or response.
+      required:
+        - agent_id
+        - timestamp
+        - type
+        - content

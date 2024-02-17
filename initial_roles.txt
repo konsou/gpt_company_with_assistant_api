@@ -1,0 +1,9 @@
+For an MVP of an AI programming system where you're the customer, consider starting with these essential roles:
+
+    Product Owner (PO): Represents the customer's interests, defines requirements, and prioritizes tasks.
+    Developer Agent: Writes code based on tasks defined by the PO. May include specialized agents for front-end and back-end development.
+    Quality Assurance (QA) Agent: Tests the software to ensure it meets requirements and is free of bugs.
+    Reviewer Agent: Reviews code for quality, maintainability, and adherence to coding standards.
+    Deployment Agent: Manages the deployment of code to production or test environments.
+
+This setup covers the critical aspects of software development: planning, coding, testing, reviewing, and deployment, providing a comprehensive approach for the MVP stage.
