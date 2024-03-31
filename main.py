@@ -1,9 +1,8 @@
-import asyncio
-import time
-
 from assistants.open_ai import OpenAIAssistant
 from assistants.open_router import OpenRouterAssistant
 from message_bus import MessageBus, Message
+
+from workspace import Workspace
 
 
 def handle_message(message):
@@ -13,6 +12,7 @@ def handle_message(message):
 
 def main():
     message_bus = MessageBus()
+    workspace = Workspace()
 
     ass = OpenRouterAssistant(
         model="databricks/dbrx-instruct",
@@ -20,6 +20,7 @@ def main():
         role="Software Developer",
         instructions="You write code that fulfills the customer's requests but ALWAYS INCLUDE EMOJIS in the code",
         message_bus=message_bus,
+        workspace=workspace,
     )
     message_bus.subscribe("konso", handle_message)
     message_bus.publish(

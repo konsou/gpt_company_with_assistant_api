@@ -7,12 +7,14 @@ import dotenv
 import openai
 import openai.types.beta.threads
 
+from .base import BaseAssistant
 import message_bus
+import workspace
 
 dotenv.load_dotenv()
 
 
-class OpenAIAssistant:
+class OpenAIAssistant(BaseAssistant):
     def __init__(
         self,
         model: str,
@@ -20,19 +22,22 @@ class OpenAIAssistant:
         role: str,
         instructions: str,
         message_bus: message_bus.MessageBus,
+        workspace: workspace.Workspace,
     ):
+        super().__init__(
+            model=model,
+            name=name,
+            role=role,
+            instructions=instructions,
+            message_bus=message_bus,
+            workspace=workspace,
+        )
         self._api_key = os.getenv("OPENAI_API_KEY")
-        self.model = model
-        self.name = name
-        self.role = role
-        self.instructions = f"Your role is {role}. {instructions}"
         self._client = openai.Client(api_key=self._api_key)
         self._assistant = self._client.beta.assistants.create(
             model=model, name=name, instructions=instructions
         )
         self._threads: dict[str, object] = {}
-        self.message_bus = message_bus
-        self.message_bus.subscribe(self.name, self.handle_message)
 
     def handle_message(self, message: message_bus.Message):
         if message.recipient == self.name:

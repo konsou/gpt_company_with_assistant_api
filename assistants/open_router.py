@@ -4,9 +4,11 @@ import requests
 import json
 
 import message_bus
+import workspace
+from .base import BaseAssistant
 
 
-class OpenRouterAssistant:
+class OpenRouterAssistant(BaseAssistant):
     def __init__(
         self,
         model: str,
@@ -14,15 +16,17 @@ class OpenRouterAssistant:
         role: str,
         instructions: str,
         message_bus: message_bus.MessageBus,
+        workspace: workspace.Workspace,
     ):
+        super().__init__(
+            model=model,
+            name=name,
+            role=role,
+            instructions=instructions,
+            message_bus=message_bus,
+            workspace=workspace,
+        )
         self._api_key = os.getenv("OPENROUTER_API_KEY")
-        self.model = model
-        self.name = name
-        self.role = role
-        self.instructions = f"Your role is {role}. {instructions}"
-        self.message_bus = message_bus
-        self.message_bus.subscribe(self.name, self.handle_message)
-        self._threads: dict[str, object] = {}
 
     def handle_message(self, message: message_bus.Message):
         if message.recipient == self.name:
