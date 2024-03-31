@@ -2,6 +2,7 @@ import asyncio
 import time
 
 from assistants.open_ai import OpenAIAssistant
+from assistants.open_router import OpenRouterAssistant
 from message_bus import MessageBus, Message
 
 
@@ -13,11 +14,11 @@ def handle_message(message):
 def main():
     message_bus = MessageBus()
 
-    ass = OpenAIAssistant(
-        model="gpt-4-0125-preview",
+    ass = OpenRouterAssistant(
+        model="databricks/dbrx-instruct",
         name="Erkki",
         role="Software Developer",
-        instructions="You write code that fulfills the customer's requests",
+        instructions="You write code that fulfills the customer's requests but ALWAYS INCLUDE EMOJIS in the code",
         message_bus=message_bus,
     )
     message_bus.subscribe("konso", handle_message)
@@ -25,7 +26,7 @@ def main():
         Message(
             sender="konso",
             recipient="Erkki",
-            content="What is the capital of Mongolia?",
+            content="Write a python program for displaying numbers 1..100",
         )
     )
 
