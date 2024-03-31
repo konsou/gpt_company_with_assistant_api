@@ -1,20 +1,24 @@
 import os
 import sys
 import time
-import asyncio
 from typing import Any
 
 import dotenv
 import openai
+import openai.types.beta.threads
 
-from message_bus import MessageBus, Message
+import message_bus
 
 dotenv.load_dotenv()
 
 
 class OpenAIAssistant:
     def __init__(
-        self, model: str, name: str, instructions: str, message_bus: MessageBus
+        self,
+        model: str,
+        name: str,
+        instructions: str,
+        message_bus: message_bus.MessageBus,
     ):
         self._api_key = os.getenv("OPENAI_API_KEY")
         self.model = model
@@ -28,11 +32,13 @@ class OpenAIAssistant:
         self.message_bus = message_bus
         self.message_bus.subscribe(self.name, self.handle_message)
 
-    async def handle_message(self, message: Message):
+    async def handle_message(self, message: message_bus.Message):
         if message.recipient == self.name:
             response = self.get_response(message.sender, message.content)
             await self.message_bus.publish(
-                Message(sender=self.name, recipient=message.sender, content=response)
+                message_bus.Message(
+                    sender=self.name, recipient=message.sender, content=response
+                )
             )
 
     def get_response(self, asker_name: str, query: str) -> str:
@@ -41,8 +47,10 @@ class OpenAIAssistant:
 
         thread = self._threads[asker_name]
 
-        message = self._client.beta.threads.messages.create(
-            thread_id=thread.id, role="user", content=query
+        message: openai.types.beta.threads.Message = (
+            self._client.beta.threads.messages.create(
+                thread_id=thread.id, role="user", content=query
+            )
         )
 
         run = self._client.beta.threads.runs.create(
