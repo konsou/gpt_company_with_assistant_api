@@ -22,9 +22,11 @@ class MessageBus:
         if recipient not in self.subscribers:
             self.subscribers[recipient] = []
         self.subscribers[recipient].append(handler)
+        print(f"{recipient} subscribed to message bus")
 
     def unsubscribe(self, recipient: str, handler: Callable[[Message], None]):
         if recipient in self.subscribers:
             self.subscribers[recipient].remove(handler)
             if not self.subscribers[recipient]:
                 del self.subscribers[recipient]
+        print(f"{recipient} unsubscribed from message bus")
