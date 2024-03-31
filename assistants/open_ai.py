@@ -17,13 +17,15 @@ class OpenAIAssistant:
         self,
         model: str,
         name: str,
+        role: str,
         instructions: str,
         message_bus: message_bus.MessageBus,
     ):
         self._api_key = os.getenv("OPENAI_API_KEY")
         self.model = model
         self.name = name
-        self.instructions = instructions
+        self.role = role
+        self.instructions = f"Your role is {role}. {instructions}"
         self._client = openai.Client(api_key=self._api_key)
         self._assistant = self._client.beta.assistants.create(
             model=model, name=name, instructions=instructions
