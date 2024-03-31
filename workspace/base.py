@@ -1,2 +1,11 @@
+from typing import NamedTuple
+
+
+class CommandResult(NamedTuple):
+    status: int
+    content: str
+
+
 class Workspace:
-    pass
+    def run_command(self, command: str) -> CommandResult:
+        raise NotImplementedError

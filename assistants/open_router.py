@@ -56,4 +56,11 @@ class OpenRouterAssistant(BaseAssistant):
         response = requests.post(url, headers=headers, data=data)
         response_data = response.json()
 
-        return response_data["choices"][0]["message"]["content"]
+        response_text = response_data["choices"][0]["message"]["content"]
+
+        command = self.parse_execute_command(response_text)
+        if command:
+            command_result = self.run_command(command)
+            response_text += "\n" + command_result.content
+
+        return response_text

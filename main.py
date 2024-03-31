@@ -2,7 +2,7 @@ from assistants.open_ai import OpenAIAssistant
 from assistants.open_router import OpenRouterAssistant
 from message_bus import MessageBus, Message
 
-from workspace import Workspace
+from workspace.dummy import DummyWorkspace
 
 
 def handle_message(message):
@@ -12,13 +12,13 @@ def handle_message(message):
 
 def main():
     message_bus = MessageBus()
-    workspace = Workspace()
+    workspace = DummyWorkspace()
 
     ass = OpenRouterAssistant(
         model="databricks/dbrx-instruct",
         name="Erkki",
         role="Software Developer",
-        instructions="You write code that fulfills the customer's requests but ALWAYS INCLUDE EMOJIS in the code",
+        instructions="You write code that fulfills the customer's requests. You can execute commands in your dev environment by enclosing them in <execute></execute> tags.",
         message_bus=message_bus,
         workspace=workspace,
     )
@@ -27,7 +27,7 @@ def main():
         Message(
             sender="konso",
             recipient="Erkki",
-            content="Write a python program for displaying numbers 1..100",
+            content="Please check your dev env directory contents",
         )
     )
 
