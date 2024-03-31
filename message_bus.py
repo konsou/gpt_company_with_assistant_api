@@ -13,10 +13,10 @@ class MessageBus:
     def __init__(self):
         self.subscribers: Dict[str, List[Callable[[Message], None]]] = {}
 
-    async def publish(self, message: Message):
+    def publish(self, message: Message):
         if message.recipient in self.subscribers:
             for handler in self.subscribers[message.recipient]:
-                await asyncio.create_task(handler(message))
+                handler(message)
 
     def subscribe(self, recipient: str, handler: Callable[[Message], None]):
         if recipient not in self.subscribers:

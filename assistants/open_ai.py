@@ -34,10 +34,10 @@ class OpenAIAssistant:
         self.message_bus = message_bus
         self.message_bus.subscribe(self.name, self.handle_message)
 
-    async def handle_message(self, message: message_bus.Message):
+    def handle_message(self, message: message_bus.Message):
         if message.recipient == self.name:
             response = self.get_response(message.sender, message.content)
-            await self.message_bus.publish(
+            self.message_bus.publish(
                 message_bus.Message(
                     sender=self.name, recipient=message.sender, content=response
                 )
