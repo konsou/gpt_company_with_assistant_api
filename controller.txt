@@ -1,0 +1,11 @@
+Skipping a separate Central Controller and allowing agents to communicate directly can simplify your architecture and reduce overhead. This approach emphasizes a decentralized model, where each agent operates semi-autonomously, coordinating with others as needed.
+
+For spawning agents without a central controller, consider the following strategies:
+
+    Static Initialization: Define a startup script that initializes all necessary agents based on predefined roles (PO, Developer, QA, Reviewer, Deployment). This script can be run at the beginning of each session or project.
+
+    Dynamic Registration: Allow agents to "register" themselves on the message bus upon startup, announcing their role and availability. Other agents can then discover and interact with them based on their announced capabilities.
+
+    Configuration File: Use a configuration file to define which agents to spawn and their initial parameters. This file can be read at startup to dynamically create instances of each required agent.
+
+This model encourages flexibility and scalability, allowing for easy adjustments as your project evolves.
