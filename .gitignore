@@ -1,4 +1,4 @@
 .env
 .idea
 
-workspace/agent-workspace
+agent-workspace/
