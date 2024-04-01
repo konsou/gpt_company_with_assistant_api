@@ -52,16 +52,8 @@ class DockerWorkspace(Workspace):
         print(f"Initialisation complete")
 
     def run_command(self, command: str) -> CommandResult:
-        # TODO bug: sometimes output is garbled
-        print(f"-------------------------")
         print(f"Running command: {command}")
-
-        # Needed to include only new output
-        # self._clear_shell_screen()
-
-        # Send the command to the interactive shell session
         self._shell.send(f"{command}\n".encode("utf-8"))
-
         output = self._receive_from_shell()
 
         print(f"Command output: {output}")
@@ -100,11 +92,9 @@ class DockerWorkspace(Workspace):
     def _connect_ssh_shell(self):
         print(f"Starting shell inside docker container...")
 
-        # Create an SSH client
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-        # Connect to the container via SSH
         ssh.connect(
             hostname="localhost",
             port=DOCKER_HOST_SSH_PORT,
@@ -115,7 +105,6 @@ class DockerWorkspace(Workspace):
         return ssh, shell
 
     def _receive_from_shell(self, delimiter: str = "# ") -> str:
-        # Wait for the command to complete and retrieve the output
         output = ""
         while not output.endswith(delimiter):
             reply = self._shell.recv(1024).decode("utf-8")
