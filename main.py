@@ -1,5 +1,6 @@
 from assistants.open_ai import OpenAIAssistant
 from assistants.open_router import OpenRouterAssistant
+from instructions import DEVELOPER_INSTRUCTIONS
 from message_bus import MessageBus, Message
 
 from workspace import DockerWorkspace
@@ -18,7 +19,7 @@ def main():
         model="databricks/dbrx-instruct",
         name="Erkki",
         role="Software Developer",
-        instructions="You write code that fulfills the customer's requests. You can execute commands in your dev environment by enclosing them in <execute></execute> tags.",
+        instructions=DEVELOPER_INSTRUCTIONS,
         message_bus=message_bus,
         workspace=workspace,
     )
@@ -27,7 +28,7 @@ def main():
         Message(
             sender="konso",
             recipient="Erkki",
-            content="Please check your dev env directory contents",
+            content="Please create a test file in your dev env and then check the directory contents",
         )
     )
 
