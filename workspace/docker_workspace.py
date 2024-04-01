@@ -53,10 +53,11 @@ class DockerWorkspace(Workspace):
 
     def run_command(self, command: str) -> CommandResult:
         # TODO bug: sometimes output is garbled
+        print(f"-------------------------")
         print(f"Running command: {command}")
 
         # Needed to include only new output
-        self._clear_shell_screen()
+        # self._clear_shell_screen()
 
         # Send the command to the interactive shell session
         self._shell.send(f"{command}\n".encode("utf-8"))
