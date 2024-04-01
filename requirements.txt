@@ -4,3 +4,4 @@ black
 mypy
 requests
 docker
+paramiko
