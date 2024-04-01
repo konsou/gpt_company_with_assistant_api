@@ -1,3 +1,4 @@
+import atexit
 import os
 import random
 import string
@@ -34,6 +35,7 @@ class DockerWorkspace(Workspace):
             self._image = self._client.images.get(DOCKER_IMAGE_NAME)
         except docker.errors.ImageNotFound:
             self._image = self._build_image()
+        atexit.register(self.cleanup)
         self._container = self._run_container()
         print(f"Initialisation complete")
 
@@ -41,7 +43,7 @@ class DockerWorkspace(Workspace):
         raise NotImplementedError
 
     def cleanup(self):
-        print(f"Stopping docker container")
+        print(f"Stopping docker container {DOCKER_CONTAINER_NAME}...")
         self._container.stop()
 
     def _build_image(self) -> docker.models.images.Image:
@@ -63,9 +65,3 @@ class DockerWorkspace(Workspace):
                 )
             ],
         )
-
-
-if __name__ == "__main__":
-    ws = DockerWorkspace()
-    input("Press ENTER to continue")
-    ws.cleanup()
