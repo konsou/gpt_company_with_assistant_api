@@ -3,3 +3,4 @@ openai
 black
 mypy
 requests
+docker
