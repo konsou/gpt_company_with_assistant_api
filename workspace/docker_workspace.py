@@ -51,11 +51,12 @@ class DockerWorkspace(Workspace):
         atexit.register(self.cleanup)
         self._container = self._run_container()
         self._ssh, self._shell = self._connect_ssh_shell()
+        self._configure_shell()
         print(f"Initialisation complete")
 
     def run_command(self, command: str) -> CommandResult:
         print(f"Running command: {command}")
-        self._shell.send(f"{command}\n".encode("utf-8"))
+        self._send_to_shell(command)
         output = self._receive_from_shell()
 
         print(f"Command output: {output}")
@@ -105,6 +106,13 @@ class DockerWorkspace(Workspace):
         )
         shell = ssh.invoke_shell()
         return ssh, shell
+
+    def _configure_shell(self):
+        self._send_to_shell(f"cd {DOCKER_WORK_DIR}")
+        self._receive_from_shell()  # to clear shell output
+
+    def _send_to_shell(self, command: str):
+        self._shell.send(f"{command}\n".encode("utf-8"))
 
     def _receive_from_shell(self, delimiter: str = "# ") -> str:
         output = ""
