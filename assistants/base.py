@@ -1,5 +1,6 @@
 import message_bus
 import workspace
+from assistants.tag_parser import ExecuteTagParser
 
 
 class BaseAssistant:
@@ -19,6 +20,7 @@ class BaseAssistant:
         self.message_bus = message_bus
         self.message_bus.subscribe(self.name, self.handle_message)
         self.workspace = workspace
+        self._execute_tag_parser = ExecuteTagParser()
 
     def handle_message(self, message: message_bus.Message):
         raise NotImplementedError
@@ -26,14 +28,8 @@ class BaseAssistant:
     def run_command(self, command: str):
         return self.workspace.run_command(command)
 
-    def parse_execute_command(self, text: str) -> str:
-        start_tag = "<execute>"
-        end_tag = "</execute>"
-        start_index = text.find(start_tag)
-        end_index = text.find(end_tag)
-
-        if start_index != -1 and end_index != -1:
-            command = text[start_index + len(start_tag) : end_index]
-            return command
-
-        return ""
+    def parse_execute_commands(self, text: str) -> list[str]:
+        self._execute_tag_parser.reset()
+        self._execute_tag_parser.feed(text)
+        self._execute_tag_parser.close()
+        return self._execute_tag_parser.texts
