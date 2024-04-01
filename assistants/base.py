@@ -32,4 +32,4 @@ class BaseAssistant:
         self._execute_tag_parser.reset()
         self._execute_tag_parser.feed(text)
         self._execute_tag_parser.close()
-        return self._execute_tag_parser.texts
+        return [t for t in self._execute_tag_parser.texts if t.strip()]
