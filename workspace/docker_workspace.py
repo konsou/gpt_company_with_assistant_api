@@ -3,6 +3,7 @@ import os
 import random
 import socket
 import string
+from pathlib import Path
 
 import docker
 import docker.errors
@@ -27,8 +28,9 @@ def reserve_free_port() -> int:
     return tcp.getsockname()[1]
 
 
-WORKSPACE_DIR = "./agent-workspace"
-WORKSPACE_SSH_PRIVATE_KEY = "./ssh/workspace-ssh-key"
+SCRIPT_DIR = Path(__file__).parent.absolute()
+WORKSPACE_DIR = os.path.join(SCRIPT_DIR, "agent-workspace")
+WORKSPACE_SSH_PRIVATE_KEY = os.path.join(SCRIPT_DIR, "ssh", "workspace-ssh-key")
 DOCKER_WORK_DIR = "/root/workspace"
 DOCKER_IMAGE_NAME = "ai-agent-workspace"
 DOCKER_CONTAINER_NAME = f"ai-agent-workspace-{generate_random_chars(5)}"

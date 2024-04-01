@@ -2,7 +2,7 @@ from assistants.open_ai import OpenAIAssistant
 from assistants.open_router import OpenRouterAssistant
 from message_bus import MessageBus, Message
 
-from workspace.dummy import DummyWorkspace
+from workspace import DockerWorkspace
 
 
 def handle_message(message):
@@ -12,7 +12,7 @@ def handle_message(message):
 
 def main():
     message_bus = MessageBus()
-    workspace = DummyWorkspace()
+    workspace = DockerWorkspace()
 
     ass = OpenRouterAssistant(
         model="databricks/dbrx-instruct",
