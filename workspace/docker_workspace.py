@@ -48,14 +48,20 @@ class DockerWorkspace(Workspace):
             self._image = self._build_image()
         atexit.register(self.cleanup)
         self._container = self._run_container()
-        self._ssh = self._connect_ssh()
+        self._ssh, self._shell = self._connect_ssh_shell()
         print(f"Initialisation complete")
 
     def run_command(self, command: str) -> CommandResult:
+        # TODO bug: sometimes output is garbled
         print(f"Running command: {command}")
-        stdin, stdout, stderr = self._ssh.exec_command(command)
 
-        output = stdout.read().decode("utf-8") + stderr.read().decode("utf-8")
+        # Needed to include only new output
+        self._clear_shell_screen()
+
+        # Send the command to the interactive shell session
+        self._shell.send(f"{command}\n".encode("utf-8"))
+
+        output = self._receive_from_shell()
 
         print(f"Command output: {output}")
         return CommandResult(
@@ -90,7 +96,7 @@ class DockerWorkspace(Workspace):
             ports={22: DOCKER_HOST_SSH_PORT},
         )
 
-    def _connect_ssh(self):
+    def _connect_ssh_shell(self):
         print(f"Starting shell inside docker container...")
 
         # Create an SSH client
@@ -104,13 +110,39 @@ class DockerWorkspace(Workspace):
             username="root",
             key_filename=WORKSPACE_SSH_PRIVATE_KEY,
         )
+        shell = ssh.invoke_shell()
+        return ssh, shell
 
-        return ssh
+    def _receive_from_shell(self, delimiter: str = "# ") -> str:
+        # Wait for the command to complete and retrieve the output
+        output = ""
+        while not output.endswith(delimiter):
+            reply = self._shell.recv(1024).decode("utf-8")
+            output += reply
+        cleaned_output = self._extract_shell_output(output)
+        return cleaned_output
+
+    def _clear_shell_screen(self):
+        self._shell.send(f"clear\n".encode("utf-8"))
+        self._receive_from_shell()
+
+    def _extract_shell_output(self, input_string) -> str:
+        start_sequence = "\x1b[?2004l"
+        end_sequence = "\x1b[?2004h"
+
+        start_index = input_string.rfind(start_sequence)
+        end_index = input_string.rfind(end_sequence)
+
+        if start_index != -1 and end_index != -1:
+            start_index += len(start_sequence)
+            output = input_string[start_index:end_index].strip()
+            return output
+        else:
+            return ""
 
 
 if __name__ == "__main__":
     ws = DockerWorkspace()
-    input("ENTER")
     res = ws.run_command("pwd")
     res = ws.run_command("cd /")
     res = ws.run_command("pwd")
