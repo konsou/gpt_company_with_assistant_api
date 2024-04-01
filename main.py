@@ -5,6 +5,8 @@ from message_bus import MessageBus, Message
 
 from workspace import DockerWorkspace
 
+# TODO: command execution is wonky. Directory confusion?
+
 
 def handle_message(message):
     print(f"Received message from: {message.sender}")
