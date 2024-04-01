@@ -73,7 +73,7 @@ class DockerWorkspace(Workspace):
 
     def _build_image(self) -> docker.models.images.Image:
         print(f"Building docker image {DOCKER_IMAGE_NAME}...")
-        return self._client.images.build(path=".", tag=DOCKER_IMAGE_NAME)
+        return self._client.images.build(path=SCRIPT_DIR, tag=DOCKER_IMAGE_NAME)
 
     def _run_container(self) -> docker.models.containers.Container:
         print(f"Running docker container {DOCKER_CONTAINER_NAME}...")
