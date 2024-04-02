@@ -52,8 +52,8 @@ class BaseAssistant:
         )
         return {"role": "tool", "content": content}
 
-    def parse_tool_calls(self, content: str) -> tuple[ToolCall, ...]:
-        result = self._tool_parser.parse(content)
+    def parse_tool_calls(self, content: str, caller: str) -> tuple[ToolCall, ...]:
+        result = self._tool_parser.parse(text=content, caller=caller)
         return result
 
     def call_tools(self, calls: Collection[ToolCall]):

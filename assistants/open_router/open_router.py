@@ -131,7 +131,9 @@ class OpenRouterAssistant(BaseAssistant):
             print(f"{self.name}: response message was empty")
             return
         self._add_response_message(response_message)
-        tool_calls = self.parse_tool_calls(response_message["content"])
+        tool_calls = self.parse_tool_calls(
+            response_message["content"], caller=self.name
+        )
         self.call_tools(tool_calls)
 
     def call_tools(self, calls: Collection[ToolCall]):

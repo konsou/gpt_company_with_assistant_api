@@ -31,7 +31,7 @@ def main():
         Message(
             sender="konso",
             recipient="Erkki",
-            content="Please list the files in your dev env.",
+            content="Please test the <message> functionality by sending me a test message with it",
         )
     )
     ass.process_messages()

@@ -17,11 +17,12 @@ class Tool(ABC):
 @dataclasses.dataclass
 class ToolCall:
     tool: Tool
+    caller: str
     args: tuple
     kwargs: dict
 
     def call(self) -> str:
-        return self.tool.function(*self.args, **self.kwargs)
+        return self.tool.function(*self.args, **self.kwargs, caller=self.caller)
 
 
 if __name__ == "__main__":
