@@ -18,6 +18,12 @@ class ToolTagParser(HTMLParser):
         self.attrs: tuple[Attr] = tuple()
         self.parsed_tags: list[ParseResult] = []
 
+    def reset(self):
+        super().reset()
+        self.active_tag: Optional[str] = None
+        self.attrs: tuple[Attr] = tuple()
+        self.parsed_tags: list[ParseResult] = []
+
     def handle_starttag(self, tag, attrs):
         if tag in self.valid_tags:
             self.active_tag = tag

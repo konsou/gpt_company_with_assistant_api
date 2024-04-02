@@ -1,20 +1,16 @@
 import os
 import time
 import traceback
-from typing import TypedDict, Optional, NamedTuple, Callable
+from typing import TypedDict, Optional, NamedTuple, Callable, Collection, Literal
 
 import requests
 import json
 
 import message_bus
 import workspace
-from assistants.base import BaseAssistant, Message
-from . import types
-
-
-class InternalCommand(NamedTuple):
-    function: Callable
-    arguments: tuple
+from assistants.base import BaseAssistant, InternalMessage
+from . import types_response
+from ..tools.types import ToolCall
 
 
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -41,30 +37,50 @@ class OpenRouterAssistant(BaseAssistant):
             workspace=workspace,
         )
         self._api_key = os.getenv("OPENROUTER_API_KEY")
-        self._messages: list[Message] = [
+        self._messages: list[InternalMessage] = [
             {"role": "system", "content": self.instructions}
         ]
         self._api_request_headers = {
             "Authorization": f"Bearer {self._api_key}",
         }
 
-    def handle_message(self, message: message_bus.Message):
+    def handle_bus_message(self, message: message_bus.Message):
         if message.recipient == self.name:
-            self._add_message_bus_message(message)
+            self._add_bus_message(message)
 
-    def _add_internal_message(self, message: Message):
+    def _add_internal_message(self, message: InternalMessage):
         print(f"{self.name} received message: {message}")
         self._messages.append(message)
 
-    def _add_message_bus_message(self, message: message_bus.Message):
-        m: Message = {
+    def _add_response_message(self, message: types_response.Message):
+        if message["role"] in ("user", "assistant", "system", "tool"):
+            role = message["role"]
+        else:
+            print(
+                f"Invalid role in response: {message['role']}. Changing to \"assistant\"."
+            )
+            role = "assistant"
+
+        # pyCharm doesn't understand the code above that ensures "role" type
+        # noinspection PyTypeChecker
+        m: InternalMessage = {
+            # noinspection
+            "role": role,
+            "content": message["content"] if message["content"] is not None else "",
+        }
+        self._add_internal_message(m)
+
+    def _add_bus_message(self, message: message_bus.Message):
+        m: InternalMessage = {
             "role": "user",
             "name": message.sender,
             "content": message.content,
         }
         self._add_internal_message(m)
 
-    def _make_api_request(self, messages: list[Message]) -> Optional[types.Response]:
+    def _make_api_request(
+        self, messages: list[InternalMessage]
+    ) -> Optional[types_response.Response]:
         models = [self.model] if self.model is not None else self.models
         data = json.dumps(
             {
@@ -86,6 +102,7 @@ class OpenRouterAssistant(BaseAssistant):
                 response_data = response.json()
             except requests.exceptions.JSONDecodeError:
                 print(f"Couldn't parse response")
+                print(response.text)
                 response_data = None
 
             if (
@@ -107,39 +124,36 @@ class OpenRouterAssistant(BaseAssistant):
     def process_messages(self):
         response = self._make_api_request(self._messages)
         if response is None:
+            print(f"{self.name}: response was empty")
             return
-        response_message: types.Message = self._parse_response(response)
+        response_message: types_response.Message = self._parse_response(response)
         if not response_message["content"]:
             print(f"{self.name}: response message was empty")
             return
-        self._add_internal_message(response_message)
-        commands = self._parse_commands(response_message)
-        self._run_commands(commands)
+        self._add_response_message(response_message)
+        tool_calls = self.parse_tool_calls(response_message["content"])
+        self.call_tools(tool_calls)
 
-    def _run_commands(self, commands: list[InternalCommand]):
-        for command in commands:
-            result: Message = command.function(command.arguments)
-            self._add_internal_message(result)
+    def call_tools(self, calls: Collection[ToolCall]):
+        for tool_call in calls:
+            self._add_internal_message(
+                {
+                    "role": "tool",
+                    "content": f'Running tool "{tool_call.tool.name}" with arguments {tool_call.args} '
+                    f"and keyword arguments {tool_call.kwargs}",
+                }
+            )
+            result = tool_call.call()
+            self._add_internal_message(
+                {
+                    "role": "tool",
+                    "content": f"Tool run result: ```{result}```",
+                }
+            )
 
-    def _parse_commands(self, message: types.Message) -> list[InternalCommand]:
-        commands: list[InternalCommand] = []
-        command_functions = {
-            "execute": self.run_command,
-            "message": self.send_message,
-        }
-        parse_functions = {
-            "execute": self.parse_execute_commands,
-            "message": self.parse_message_commands,
-        }
-        for command, function in command_functions.items():
-            parse_results = parse_functions[command](message["content"])
-            for r in parse_results:
-                commands.append(
-                    InternalCommand(function=command_functions[command], arguments=r)
-                )
-        return commands
-
-    def _parse_response(self, response: types.Response) -> Optional[types.Message]:
+    def _parse_response(
+        self, response: types_response.Response
+    ) -> Optional[types_response.Message]:
         try:
             return response["choices"][0]["message"]
         except (KeyError, TypeError):

@@ -39,7 +39,7 @@ class OpenAIAssistant(BaseAssistant):
         )
         self._threads: dict[str, object] = {}
 
-    def handle_message(self, message: message_bus.Message):
+    def handle_bus_message(self, message: message_bus.Message):
         if message.recipient == self.name:
             response = self.get_response(message.sender, message.content)
             self.message_bus.publish(

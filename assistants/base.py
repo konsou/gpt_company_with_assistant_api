@@ -1,10 +1,16 @@
-from typing import Optional
+from typing import Optional, Collection, TypedDict, Literal, NotRequired
 
 import message_bus
 import workspace
-from assistants.tag_parser import ExecuteTagParser, MessageTagParser
 
-Message = dict[str, str]
+from assistants.tools import ToolParser
+from assistants.tools.types import ToolCall
+
+
+class InternalMessage(TypedDict):
+    role: Literal["user", "assistant", "system", "tool"]
+    content: str
+    name: NotRequired[str]
 
 
 class BaseAssistant:
@@ -24,19 +30,14 @@ class BaseAssistant:
         self.role = role
         self.instructions = f"Your role is {role}. {instructions}"
         self.message_bus = message_bus
-        self.message_bus.subscribe(self.name, self.handle_message)
+        self.message_bus.subscribe(self.name, self.handle_bus_message)
         self.workspace = workspace
-        self._execute_tag_parser = ExecuteTagParser()
-        self._message_tag_parser = MessageTagParser()
+        self._tool_parser = ToolParser(workspace=workspace, message_bus=message_bus)
 
-    def handle_message(self, message: message_bus.Message):
+    def handle_bus_message(self, message: message_bus.Message):
         raise NotImplementedError
 
-    def run_command(self, command: str) -> Message:
-        command_result = self.workspace.run_command(command).content
-        return {"role": "tool", "content": command_result}
-
-    def send_message(self, message: message_bus.Message) -> Message:
+    def send_message(self, message: message_bus.Message) -> InternalMessage:
         result = self.message_bus.publish(
             message_bus.Message(
                 sender=self.name,
@@ -51,25 +52,9 @@ class BaseAssistant:
         )
         return {"role": "tool", "content": content}
 
-    def parse_execute_commands(self, text: str) -> tuple[str]:
-        self._execute_tag_parser.reset()
-        self._execute_tag_parser.feed(text)
-        self._execute_tag_parser.close()
-        return tuple([t for t in self._execute_tag_parser.texts if t.strip()])
+    def parse_tool_calls(self, content: str) -> tuple[ToolCall, ...]:
+        result = self._tool_parser.parse(content)
+        return result
 
-    def parse_message_commands(self, text: str) -> tuple[message_bus.Message]:
-        # TODO: reduce repetition
-        self._message_tag_parser.reset()
-        self._message_tag_parser.feed(text)
-        self._message_tag_parser.close()
-        return tuple(
-            [
-                message_bus.Message(
-                    sender=self.name,
-                    recipient=m.recipient,
-                    content=m.content,
-                )
-                for m in self._message_tag_parser.messages
-                if m.recipient.strip() and m.content.strip()
-            ]
-        )
+    def call_tools(self, calls: Collection[ToolCall]):
+        raise NotImplementedError
