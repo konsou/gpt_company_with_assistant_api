@@ -49,7 +49,7 @@ class OpenRouterAssistant(BaseAssistant):
             self._add_bus_message(message)
 
     def _add_internal_message(self, message: InternalMessage):
-        print(f"{self.name} received message: {message}")
+        print(f"{self.name} received message: {json.dumps(message)}")
         self._messages.append(message)
 
     def _add_response_message(self, message: types_response.Message):
