@@ -1,3 +1,5 @@
+from typing import Optional
+
 import message_bus
 import workspace
 from assistants.tag_parser import ExecuteTagParser, MessageTagParser
@@ -8,14 +10,16 @@ Message = dict[str, str]
 class BaseAssistant:
     def __init__(
         self,
-        model: str,
         name: str,
         role: str,
         instructions: str,
         message_bus: message_bus.MessageBus,
         workspace: workspace.Workspace,
+        model: Optional[str] = None,
+        models: Optional[list[str]] = None,
     ):
         self.model = model
+        self.models = models
         self.name = name
         self.role = role
         self.instructions = f"Your role is {role}. {instructions}"

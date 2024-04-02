@@ -18,7 +18,7 @@ def main():
     workspace = DockerWorkspace()
 
     ass = OpenRouterAssistant(
-        # model="databricks/dbrx-instruct",
+        # models=["databricks/dbrx-instruct", "mistralai/mixtral-8x7b-instruct"],
         model="mistralai/mixtral-8x7b-instruct",
         name="Erkki",
         role="Software Developer",

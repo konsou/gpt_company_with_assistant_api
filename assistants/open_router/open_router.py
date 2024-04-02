@@ -23,15 +23,17 @@ API_URL = "https://openrouter.ai/api/v1/chat/completions"
 class OpenRouterAssistant(BaseAssistant):
     def __init__(
         self,
-        model: str,
         name: str,
         role: str,
         instructions: str,
         message_bus: message_bus.MessageBus,
         workspace: workspace.Workspace,
+        model: Optional[str] = None,
+        models: Optional[list[str]] = None,
     ):
         super().__init__(
             model=model,
+            models=models,
             name=name,
             role=role,
             instructions=instructions,
@@ -63,12 +65,15 @@ class OpenRouterAssistant(BaseAssistant):
         self._add_internal_message(m)
 
     def _make_api_request(self, messages: list[Message]) -> Optional[types.Response]:
+        models = [self.model] if self.model is not None else self.models
         data = json.dumps(
             {
-                "model": self.model,
+                "models": models,
                 "messages": messages,
+                "route": "fallback",
             }
         )
+
         print(f"Sending request to {API_URL}...")
         tries = 3
         retry_delay = 1
@@ -88,6 +93,7 @@ class OpenRouterAssistant(BaseAssistant):
                 and response_data
                 and "error" not in response_data
             ):
+                print(f"API call used model: {response_data['model']}")
                 return response_data
             print(f"Request failed: {response.status_code}")
             if response_data:
