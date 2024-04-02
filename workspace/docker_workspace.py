@@ -35,6 +35,7 @@ DOCKER_WORK_DIR = "/root/workspace"
 DOCKER_IMAGE_NAME = "ai-agent-workspace"
 DOCKER_CONTAINER_NAME = f"ai-agent-workspace-{generate_random_chars(5)}"
 DOCKER_HOST_SSH_PORT = reserve_free_port()
+SHELL_TIMEOUT = 10  # seconds
 
 
 class DockerWorkspace(Workspace):
@@ -108,6 +109,7 @@ class DockerWorkspace(Workspace):
         return ssh, shell
 
     def _configure_shell(self):
+        self._shell.settimeout(SHELL_TIMEOUT)
         self._send_to_shell(f"cd {DOCKER_WORK_DIR}")
         self._receive_from_shell()  # to clear shell output
 

@@ -1,4 +1,4 @@
-from assistants.tools.execute import Execute
+from assistants.tools.shell import Shell
 from assistants.tools.tag_parser import ToolTagParser
 from assistants.tools.types import Tool, ToolCall
 import message_bus
@@ -12,7 +12,7 @@ class ToolParser:
         self.message_bus = message_bus
         # ADD NEW TOOLS HERE
         self.all_tools = (
-            Execute(workspace=workspace),
+            Shell(workspace=workspace),
             Message(message_bus=message_bus),
         )
         self.tools_by_name: dict[str, Tool] = {t.name: t for t in self.all_tools}

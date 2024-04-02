@@ -11,6 +11,16 @@ def handle_message(message):
     print(message.content)
 
 
+def send_message(content, message_bus):
+    message_bus.publish(
+        Message(
+            sender="konso",
+            recipient="Erkki",
+            content=content,
+        )
+    )
+
+
 def main():
     message_bus = MessageBus()
     workspace = DockerWorkspace()
@@ -25,15 +35,18 @@ def main():
         workspace=workspace,
     )
     message_bus.subscribe("konso", handle_message)
-    message_bus.publish(
-        Message(
-            sender="konso",
-            recipient="Erkki",
-            content="Please implement a console-based tic-tac-toe game in python. Save the code in your dev env. Let me know when you're finished and I'll check it out.",
-        )
+    send_message(
+        content="Please implement a console-based tic-tac-toe game in python. Save the code in your dev env. Let me know when you're finished and I'll check it out.",
+        message_bus=message_bus,
     )
-    ass.process_messages()
+    while True:
+        ass.process_messages()
+        s = input("konso: ")
+        if s.strip():
+            send_message(content=s, message_bus=message_bus)
 
+
+# TODO: shell commands wonky
 
 if __name__ == "__main__":
     main()
