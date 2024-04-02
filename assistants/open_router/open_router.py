@@ -1,18 +1,20 @@
 import os
 import time
 import traceback
-from typing import TypedDict, Optional
+from typing import TypedDict, Optional, NamedTuple, Callable
 
 import requests
 import json
 
 import message_bus
 import workspace
-from assistants.base import BaseAssistant
+from assistants.base import BaseAssistant, Message
 from . import types
 
 
-Message = dict[str, str]
+class InternalCommand(NamedTuple):
+    function: Callable
+    arguments: tuple
 
 
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -47,14 +49,9 @@ class OpenRouterAssistant(BaseAssistant):
     def handle_message(self, message: message_bus.Message):
         if message.recipient == self.name:
             self._add_message_bus_message(message)
-            response = self.get_response_from_query(message.sender, message.content)
-            self.message_bus.publish(
-                message_bus.Message(
-                    sender=self.name, recipient=message.sender, content=response
-                )
-            )
 
     def _add_internal_message(self, message: Message):
+        print(f"{self.name} received message: {message}")
         self._messages.append(message)
 
     def _add_message_bus_message(self, message: message_bus.Message):
@@ -79,7 +76,13 @@ class OpenRouterAssistant(BaseAssistant):
             response = requests.post(
                 API_URL, headers=self._api_request_headers, data=data
             )
-            response_data = response.json()
+
+            try:
+                response_data = response.json()
+            except requests.exceptions.JSONDecodeError:
+                print(f"Couldn't parse response")
+                response_data = None
+
             if (
                 response.status_code == 200
                 and response_data
@@ -94,6 +97,49 @@ class OpenRouterAssistant(BaseAssistant):
             time.sleep(retry_delay)
         print(f"No response from API")
         return None
+
+    def process_messages(self):
+        response = self._make_api_request(self._messages)
+        if response is None:
+            return
+        response_message: types.Message = self._parse_response(response)
+        if not response_message["content"]:
+            print(f"{self.name}: response message was empty")
+            return
+        self._add_internal_message(response_message)
+        commands = self._parse_commands(response_message)
+        self._run_commands(commands)
+
+    def _run_commands(self, commands: list[InternalCommand]):
+        for command in commands:
+            result: Message = command.function(command.arguments)
+            self._add_internal_message(result)
+
+    def _parse_commands(self, message: types.Message) -> list[InternalCommand]:
+        commands: list[InternalCommand] = []
+        command_functions = {
+            "execute": self.run_command,
+            "message": self.send_message,
+        }
+        parse_functions = {
+            "execute": self.parse_execute_commands,
+            "message": self.parse_message_commands,
+        }
+        for command, function in command_functions.items():
+            parse_results = parse_functions[command](message["content"])
+            for r in parse_results:
+                commands.append(
+                    InternalCommand(function=command_functions[command], arguments=r)
+                )
+        return commands
+
+    def _parse_response(self, response: types.Response) -> Optional[types.Message]:
+        try:
+            return response["choices"][0]["message"]
+        except (KeyError, TypeError):
+            print(f"Invalid response")
+            print(f"Response was:\n{response}")
+            return None
 
     def get_response_from_query(self, asker_name: str, query: str) -> str:
         messages = [

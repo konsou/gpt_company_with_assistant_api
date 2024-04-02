@@ -18,7 +18,8 @@ def main():
     workspace = DockerWorkspace()
 
     ass = OpenRouterAssistant(
-        model="databricks/dbrx-instruct",
+        # model="databricks/dbrx-instruct",
+        model="mistralai/mixtral-8x7b-instruct",
         name="Erkki",
         role="Software Developer",
         instructions=DEVELOPER_INSTRUCTIONS,
@@ -30,9 +31,10 @@ def main():
         Message(
             sender="konso",
             recipient="Erkki",
-            content="Please create a test file in your dev env and then check the directory contents",
+            content="Please create a test file in your dev env and then check the directory contents. After that message me with results.",
         )
     )
+    ass.process_messages()
 
 
 if __name__ == "__main__":

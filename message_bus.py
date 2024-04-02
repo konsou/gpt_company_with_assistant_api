@@ -13,10 +13,12 @@ class MessageBus:
     def __init__(self):
         self.subscribers: Dict[str, List[Callable[[Message], None]]] = {}
 
-    def publish(self, message: Message):
+    def publish(self, message: Message) -> bool:
         if message.recipient in self.subscribers:
             for handler in self.subscribers[message.recipient]:
                 handler(message)
+                return True
+        return False
 
     def subscribe(self, recipient: str, handler: Callable[[Message], None]):
         if recipient not in self.subscribers:
