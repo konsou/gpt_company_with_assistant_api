@@ -5,3 +5,4 @@ mypy
 requests
 docker
 paramiko
+colorama
