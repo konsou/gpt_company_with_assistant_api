@@ -11,4 +11,6 @@ Please always use /root/workspace/ as your base working directory.
 
 You can send messages to others using <message> tags. Example:
 <message recipient="John">Hello, John!</message>
+
+Nested tags are NOT supported and will cause an error.
 """
