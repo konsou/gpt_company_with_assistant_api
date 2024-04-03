@@ -129,6 +129,7 @@ class OpenRouterAssistant(BaseAssistant):
             print(f"{self.name}: response was empty")
             return
         response_message: types_response.Message = self._parse_response(response)
+        # TODO: empty message counter - smarter model if stuck?
         if not response_message["content"]:
             print(f"{self.name}: response message was empty")
             return
@@ -136,7 +137,24 @@ class OpenRouterAssistant(BaseAssistant):
         tool_calls = self.parse_tool_calls(
             response_message["content"], caller=self.name
         )
-        self.call_tools(tool_calls)
+        if len(tool_calls) > 1:
+            self._add_internal_message(
+                {
+                    "role": "assistant",
+                    "content": "(content added by system)Warning: multiple tags detected. "
+                    "Running the first, discarding others.(end content added by system)",
+                }
+            )
+        if len(tool_calls) < 1:
+            self._add_internal_message(
+                {
+                    "role": "assistant",
+                    "content": "(content added by system)Warning: no tags detected. "
+                    "Use <message> tags for communication.(end content added by system)",
+                }
+            )
+        # Only support one tool call per message
+        self.call_tools(tool_calls[:1])
 
     def call_tools(self, calls: Collection[ToolCall]):
         for tool_call in calls:
@@ -152,7 +170,7 @@ class OpenRouterAssistant(BaseAssistant):
             self._add_internal_message(
                 {
                     "role": "assistant",
-                    "content": f"(content added by tool)Tool run result: ```{result}```(end content added by tool)",
+                    "content": f'(content added by tool)Tool run result: "{result}"(end content added by tool)',
                 }
             )
 
