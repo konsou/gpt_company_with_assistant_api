@@ -91,6 +91,20 @@ class TestOpenRouterAssistant(TestCase):
             models=["model1", "model2"],
         )
         ora.empty_message_limit = 3
-        ora._empty_messages_by_model["one_model"] = 3
+        ora._empty_messages_by_model["model1"] = 3
         result = ora.select_override_model()
         self.assertIsNone(result)
+
+    def test_empty_message_counter_decremented(self):
+        ora = OpenRouterAssistant(
+            instructions="",
+            message_bus=MagicMock(),
+            name="",
+            role="",
+            workspace=create_autospec(Workspace),
+            models=["model1", "model2"],
+        )
+        ora.empty_message_limit = 3
+        ora._empty_messages_by_model["model1"] = 4
+        ora.select_override_model()
+        self.assertEqual(3, ora._empty_messages_by_model["model1"])
