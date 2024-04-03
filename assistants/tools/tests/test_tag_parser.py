@@ -41,3 +41,14 @@ class TestToolTagParser(TestCase):
             tag_parser.parsed_tags[0].content,
         )
         self.assertEqual("tag1", tag_parser.parsed_tags[0].tag)
+
+    def test_half_nested_tags(self):
+        text = "<tag1>Content<tag2></tag1></tag2>"
+        tag_parser = ToolTagParser(tags=("tag1", "tag2"))
+        tag_parser.feed(text)
+        # No support for nested tags at the moment - only handle the outermost tag
+        self.assertEqual(
+            "Content[ERROR: Nested tags detected]<tag2>",
+            tag_parser.parsed_tags[0].content,
+        )
+        self.assertEqual("tag1", tag_parser.parsed_tags[0].tag)
