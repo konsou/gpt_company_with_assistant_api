@@ -37,6 +37,8 @@ class OpenRouterAssistant(BaseAssistant):
             workspace=workspace,
         )
         self._api_key = os.getenv("OPENROUTER_API_KEY")
+        if not self._api_key:
+            raise RuntimeError("OPENROUTER_API_KEY not set")
         self._messages: list[InternalMessage] = [
             {"role": "system", "content": self.instructions}
         ]
