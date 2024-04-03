@@ -16,24 +16,35 @@ class TestDockerWorkspace(TestCase):
 
     def test_run_one_command(self):
         result = self.workspace.run_command("echo moi")
-        self.assertEqual(result.content, "moi")
-        self.assertEqual(result.status, 0)
+        self.assertEqual("moi", result.content)
+        self.assertEqual(0, result.status)
 
     def test_maintain_state(self):
         self.workspace.run_command("mkdir /test-dir")
         self.workspace.run_command("cd /test-dir")
         result = self.workspace.run_command("pwd")
-        self.assertEqual(result.content, "/test-dir")
-        self.assertEqual(result.status, 0)
+        self.assertEqual("/test-dir", result.content)
+        self.assertEqual(0, result.status)
 
     def test_command_failure(self):
         result = self.workspace.run_command("9afhpash9aew")
-        self.assertNotEqual(result.status, 0)
+        self.assertNotEqual(0, result.status)
 
     def test_file_creation(self):
         self.workspace.run_command('echo "This is a test file" > test')
         result = self.workspace.run_command("cat test")
-        self.assertEqual(result.content, "This is a test file")
+        self.assertEqual("This is a test file", result.content)
+
+    def test_save_file(self):
+        text_content = "This is the text content to be saved inside the container. It can include \"quotes\", 'single quotes', `backticks`, and other special characters."
+        filename = "/save-file-function-test-file.txt"
+        result = self.workspace.save_file(
+            content=text_content, file_absolute_path=filename
+        )
+        self.assertEqual(0, result.status)
+        result = self.workspace.run_command(f"cat {filename}")
+        self.assertEqual(0, result.status)
+        self.assertEqual(text_content, result.content)
 
     def tearDown(self):
         self.workspace.cleanup()

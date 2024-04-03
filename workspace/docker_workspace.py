@@ -3,6 +3,8 @@ import os
 import random
 import socket
 import string
+import tarfile
+import tempfile
 import time
 from pathlib import Path
 
@@ -27,6 +29,28 @@ def reserve_free_port() -> socket.socket:
     tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp.bind(("", 0))
     return tcp
+
+
+def save_text_to_tarball(text, filename) -> bytes:
+    # Create a temporary directory
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create the file path within the temporary directory
+        file_path = os.path.join(temp_dir, filename)
+
+        # Write the text to the file
+        with open(file_path, "w") as file:
+            file.write(text)
+
+        # Create a tarball containing the file
+        tarball_path = os.path.join(temp_dir, f"{filename}.tar")
+        with tarfile.open(tarball_path, "w") as tar:
+            tar.add(file_path, arcname=filename)
+
+        # Read the tarball content
+        with open(tarball_path, "rb") as tar_file:
+            tarball_data = tar_file.read()
+
+    return tarball_data
 
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
@@ -72,6 +96,16 @@ class DockerWorkspace(Workspace):
             status=status,
             content=output,
         )
+
+    def save_file(self, content: str, file_absolute_path: str) -> CommandResult:
+        print(f"Saving to file: {file_absolute_path}")
+        directory = os.path.dirname(file_absolute_path)
+        file_name = os.path.basename(file_absolute_path)
+        tarball_data = save_text_to_tarball(content, file_name)
+        success = self._container.put_archive(path=directory, data=tarball_data)
+        exit_code = 0 if success else 1
+        contents = "File saved" if success else "Error saving file"
+        return CommandResult(status=exit_code, content=contents)
 
     def cleanup(self):
         print(f"Stopping docker container {self.container_name}...")
