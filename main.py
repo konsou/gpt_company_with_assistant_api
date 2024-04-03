@@ -47,7 +47,5 @@ def main():
             send_message(content=s, message_bus=message_bus)
 
 
-# TODO: shell commands wonky
-
 if __name__ == "__main__":
     main()
