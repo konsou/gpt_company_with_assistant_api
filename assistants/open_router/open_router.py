@@ -142,16 +142,17 @@ class OpenRouterAssistant(BaseAssistant):
         for tool_call in calls:
             self._add_internal_message(
                 {
-                    "role": "tool",
-                    "content": f'Running tool "{tool_call.tool.name}" with arguments {tool_call.args} '
-                    f"and keyword arguments {tool_call.kwargs}",
+                    # Multiple consecutive "tool" role messages cause an error - changed to "assistant"
+                    "role": "assistant",
+                    "content": f'(content added by tool)Running tool "{tool_call.tool.name}" with arguments {tool_call.args} '
+                    f"and keyword arguments {tool_call.kwargs}(end content added by tool)",
                 }
             )
             result = tool_call.call()
             self._add_internal_message(
                 {
-                    "role": "tool",
-                    "content": f"Tool run result: ```{result}```",
+                    "role": "assistant",
+                    "content": f"(content added by tool)Tool run result: ```{result}```(end content added by tool)",
                 }
             )
 
