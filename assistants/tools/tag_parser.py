@@ -28,11 +28,19 @@ class ToolTagParser(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         if tag in self.valid_tags:
+            if self.active_tag is not None:
+                # No support for nested tags atm
+                self._data = f"{self._data}[ERROR: Nested tags detected]<{tag}>"
+                return
             self.active_tag = tag
             self.attrs = tuple(attrs)
 
     def handle_endtag(self, tag):
         if tag in self.valid_tags:
+            if tag != self.active_tag:
+                # No support for nested tags atm
+                self._data = f"{self._data}</{tag}>"
+                return
             self.parsed_tags.append(
                 ParseResult(tag=self.active_tag, attrs=self.attrs, content=self._data)
             )
