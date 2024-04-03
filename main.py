@@ -9,7 +9,7 @@ from workspace import DockerWorkspace
 
 def handle_message(message):
     print_system_message(f"Received message from: {message.sender}")
-    print(message.content)
+    print_system_message(message.content)
 
 
 def send_message(content, message_bus):
