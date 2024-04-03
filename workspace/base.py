@@ -1,4 +1,4 @@
-from typing import NamedTuple
+from typing import NamedTuple, Protocol
 
 
 class CommandResult(NamedTuple):
@@ -6,6 +6,7 @@ class CommandResult(NamedTuple):
     content: str
 
 
-class Workspace:
-    def run_command(self, command: str) -> CommandResult:
-        raise NotImplementedError
+class Workspace(Protocol):
+    def run_command(self, command: str) -> CommandResult: ...
+
+    def save_file(self, content: str, file_absolute_path: str) -> CommandResult: ...
