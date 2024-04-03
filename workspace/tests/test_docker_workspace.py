@@ -1,4 +1,5 @@
 import os
+import shutil
 import tempfile
 from unittest import TestCase
 from unittest.mock import patch
@@ -27,8 +28,13 @@ class TestDockerWorkspace(TestCase):
 
     def test_command_failure(self):
         result = self.workspace.run_command("9afhpash9aew")
-        self.assertNotEquals(result.status, 0)
+        self.assertNotEqual(result.status, 0)
+
+    def test_file_creation(self):
+        self.workspace.run_command('echo "This is a test file" > test')
+        result = self.workspace.run_command("cat test")
+        self.assertEqual(result.content, "This is a test file")
 
     def tearDown(self):
         self.workspace.cleanup()
-        os.removedirs(self.workspace_dir)
+        shutil.rmtree(self.workspace_dir)
