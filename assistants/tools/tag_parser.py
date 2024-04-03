@@ -17,12 +17,14 @@ class ToolTagParser(HTMLParser):
         self.active_tag: Optional[str] = None
         self.attrs: tuple[Attr] = tuple()
         self.parsed_tags: list[ParseResult] = []
+        self._data: str = ""
 
     def reset(self):
         super().reset()
         self.active_tag: Optional[str] = None
         self.attrs: tuple[Attr] = tuple()
         self.parsed_tags: list[ParseResult] = []
+        self._data = ""
 
     def handle_starttag(self, tag, attrs):
         if tag in self.valid_tags:
@@ -31,10 +33,12 @@ class ToolTagParser(HTMLParser):
 
     def handle_endtag(self, tag):
         if tag in self.valid_tags:
+            self.parsed_tags.append(
+                ParseResult(tag=self.active_tag, attrs=self.attrs, content=self._data)
+            )
             self.active_tag = None
+            self._data = ""
 
     def handle_data(self, data):
         if self.active_tag is not None:
-            self.parsed_tags.append(
-                ParseResult(tag=self.active_tag, attrs=self.attrs, content=data)
-            )
+            self._data = f"{self._data}{data}"
