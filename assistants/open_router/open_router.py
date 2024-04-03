@@ -45,6 +45,11 @@ class OpenRouterAssistant(BaseAssistant):
         self._api_request_headers = {
             "Authorization": f"Bearer {self._api_key}",
         }
+        # Force model change or crash after this many empty messages
+        self.empty_message_limit = 3
+        self._empty_messages_by_model: dict[str, int] = (
+            {self.model: 0} if self.model else {m: 0 for m in self.models}
+        )
 
     def handle_bus_message(self, message: message_bus.Message):
         if message.recipient == self.name:
@@ -81,9 +86,12 @@ class OpenRouterAssistant(BaseAssistant):
         self._add_internal_message(m)
 
     def _make_api_request(
-        self, messages: list[InternalMessage]
+        self, messages: list[InternalMessage], override_model: Optional[str] = None
     ) -> Optional[types_response.Response]:
-        models = [self.model] if self.model is not None else self.models
+        if override_model is not None:
+            models = [override_model]
+        else:
+            models = [self.model] if self.model is not None else self.models
         data = json.dumps(
             {
                 "models": models,
@@ -123,16 +131,43 @@ class OpenRouterAssistant(BaseAssistant):
         print(f"No response from API")
         return None
 
+    def select_override_model(self) -> Optional[str]:
+        if self.model is not None:
+            model = self.model
+            num_models = 1
+        else:
+            model = self.models[0]
+            num_models = len(self.models)
+        empty_messages = self._empty_messages_by_model[model]
+        if empty_messages <= self.empty_message_limit:
+            # No need for model override, all is well
+            return None
+
+        if num_models == 1:
+            raise RuntimeError(
+                f"Model {model} sent too many ({empty_messages}) empty messages - no alternatives"
+            )
+        else:
+            override_model = self.models[1]
+            print(
+                f"Model {model} sent too many ({empty_messages}) empty messages - overriding temporarily with {override_model}"
+            )
+            # Need to decrement counter, or we will never return to the original model
+            self._empty_messages_by_model[model] -= 1
+            return override_model
+
     def process_messages(self):
-        response = self._make_api_request(self._messages)
+        override_model = self.select_override_model()
+        response = self._make_api_request(self._messages, override_model=override_model)
         if response is None:
             print(f"{self.name}: response was empty")
             return
         response_message: types_response.Message = self._parse_response(response)
-        # TODO: empty message counter - smarter model if stuck?
         if not response_message["content"]:
-            print(f"{self.name}: response message was empty")
+            print(f"{self.name}: response message from {response['model']} was empty")
+            self._empty_messages_by_model[response["model"]] += 1
             return
+        self._empty_messages_by_model[response["model"]] = 0
         self._add_response_message(response_message)
         tool_calls = self.parse_tool_calls(
             response_message["content"], caller=self.name
@@ -183,26 +218,3 @@ class OpenRouterAssistant(BaseAssistant):
             print(f"Invalid response")
             print(f"Response was:\n{response}")
             return None
-
-    def get_response_from_query(self, asker_name: str, query: str) -> str:
-        messages = [
-            {"role": "system", "content": self.instructions},
-            {"role": "user", "name": asker_name, "content": query},
-        ]
-
-        response_data = self._make_api_request(messages)
-
-        try:
-            response_text = response_data["choices"][0]["message"]["content"]
-        except (KeyError, TypeError) as e:
-            print(f"Invalid response")
-            traceback.print_exc()
-            print(f"Response was:\n{response_data}")
-            return ""
-
-        commands: list[str] = self.parse_execute_commands(response_text)
-        for command in commands:
-            command_result = self.run_command(command)
-            response_text += "\nCommand result: " + command_result.content
-
-        return response_text
