@@ -3,6 +3,7 @@ import os
 import random
 import socket
 import string
+import time
 from pathlib import Path
 
 import docker
@@ -22,10 +23,10 @@ def generate_random_chars(length: int) -> str:
     return random_chars
 
 
-def reserve_free_port() -> int:
+def reserve_free_port() -> socket.socket:
     tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp.bind(("", 0))
-    return tcp.getsockname()[1]
+    return tcp
 
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
@@ -33,8 +34,6 @@ WORKSPACE_DIR = os.path.join(SCRIPT_DIR, "agent-workspace")
 WORKSPACE_SSH_PRIVATE_KEY = os.path.join(SCRIPT_DIR, "ssh", "workspace-ssh-key")
 DOCKER_WORK_DIR = "/root/workspace"
 DOCKER_IMAGE_NAME = "ai-agent-workspace"
-DOCKER_CONTAINER_NAME = f"ai-agent-workspace-{generate_random_chars(5)}"
-DOCKER_HOST_SSH_PORT = reserve_free_port()
 SHELL_TIMEOUT = 10  # seconds
 
 
@@ -42,9 +41,17 @@ class DockerWorkspace(Workspace):
     def __init__(self):
         super().__init__()
 
+        self.container_name = f"ai-agent-workspace-{generate_random_chars(5)}"
+        self._ssh_socket = reserve_free_port()
+        self.docker_host_ssh_port = self._ssh_socket.getsockname()[1]
+
         print(f"Initialising Docker workspace...")
         os.makedirs(WORKSPACE_DIR, exist_ok=True)
-        self._client = docker.from_env()
+        try:
+            self._client = docker.from_env()
+        except docker.errors.DockerException:
+            print(f"ERROR: could not connect to docker instance. Is it running?")
+            raise
         try:
             self._image = self._client.images.get(DOCKER_IMAGE_NAME)
         except docker.errors.ImageNotFound:
@@ -58,6 +65,7 @@ class DockerWorkspace(Workspace):
     def run_command(self, command: str) -> CommandResult:
         print(f"Running command: {command}")
         self._send_to_shell(command)
+        time.sleep(0.1)
         output = self._receive_from_shell()
 
         print(f"Command output: {output}")
@@ -68,19 +76,20 @@ class DockerWorkspace(Workspace):
         )
 
     def cleanup(self):
-        print(f"Stopping docker container {DOCKER_CONTAINER_NAME}...")
+        print(f"Stopping docker container {self.container_name}...")
         self._ssh.close()
+        self._ssh_socket.close()
         self._container.stop()
 
     def _build_image(self) -> docker.models.images.Image:
         print(f"Building docker image {DOCKER_IMAGE_NAME}...")
-        return self._client.images.build(path=SCRIPT_DIR, tag=DOCKER_IMAGE_NAME)
+        return self._client.images.build(path=str(SCRIPT_DIR), tag=DOCKER_IMAGE_NAME)
 
     def _run_container(self) -> docker.models.containers.Container:
-        print(f"Running docker container {DOCKER_CONTAINER_NAME}...")
+        print(f"Running docker container {self.container_name}...")
         return self._client.containers.run(
             DOCKER_IMAGE_NAME,
-            name=DOCKER_CONTAINER_NAME,
+            name=self.container_name,
             detach=True,
             auto_remove=True,
             mounts=[
@@ -90,7 +99,7 @@ class DockerWorkspace(Workspace):
                     type="bind",
                 )
             ],
-            ports={22: DOCKER_HOST_SSH_PORT},
+            ports={22: self.docker_host_ssh_port},
         )
 
     def _connect_ssh_shell(self):
@@ -101,7 +110,7 @@ class DockerWorkspace(Workspace):
 
         ssh.connect(
             hostname="localhost",
-            port=DOCKER_HOST_SSH_PORT,
+            port=self.docker_host_ssh_port,
             username="root",
             key_filename=WORKSPACE_SSH_PRIVATE_KEY,
         )
