@@ -4,6 +4,7 @@ from assistants.tools.types import Tool, ToolCall
 import message_bus
 from workspace import Workspace, DummyWorkspace
 from .message import Message
+from .save import Save
 
 
 class ToolParser:
@@ -14,6 +15,7 @@ class ToolParser:
         self.all_tools = (
             Shell(workspace=workspace),
             Message(message_bus=message_bus),
+            Save(workspace=workspace),
         )
         self.tools_by_name: dict[str, Tool] = {t.name: t for t in self.all_tools}
         self._parser = ToolTagParser(tags=self.tools_by_name.keys())
