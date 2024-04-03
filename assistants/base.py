@@ -4,7 +4,7 @@ import message_bus
 import workspace
 
 from assistants.tools import ToolParser
-from assistants.tools.types import ToolCall
+from assistants.tools.abc import ToolCall
 
 
 class InternalMessage(TypedDict):

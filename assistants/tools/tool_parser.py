@@ -1,6 +1,6 @@
 from assistants.tools.shell import Shell
 from assistants.tools.tag_parser import ToolTagParser
-from assistants.tools.types import Tool, ToolCall
+from assistants.tools.abc import Tool, ToolCall
 import message_bus
 from workspace import Workspace, DummyWorkspace
 from .message import Message

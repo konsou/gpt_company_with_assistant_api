@@ -1,4 +1,4 @@
-from assistants.tools.types import Tool
+from assistants.tools.abc import Tool
 import message_bus
 
 

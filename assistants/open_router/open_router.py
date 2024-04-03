@@ -10,7 +10,7 @@ import message_bus
 import workspace
 from assistants.base import BaseAssistant, InternalMessage
 from . import types_response
-from ..tools.types import ToolCall
+from ..tools.abc import ToolCall
 
 
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
