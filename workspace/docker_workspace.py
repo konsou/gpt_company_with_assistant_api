@@ -65,7 +65,7 @@ class DockerWorkspace(Workspace):
     def run_command(self, command: str) -> CommandResult:
         print(f"Running command: {command}")
         output = self._run_in_shell(command)
-        status = int(self._run_in_shell("echo $?"))
+        status = self._get_last_shell_command_status()
 
         print(f"Command output: {output}")
         return CommandResult(
@@ -120,12 +120,23 @@ class DockerWorkspace(Workspace):
         self._send_to_shell(f"cd {DOCKER_WORK_DIR}")
         self._receive_from_shell()  # to clear shell output
 
+    def _get_last_shell_command_status(self) -> int:
+        status_string = self._run_in_shell("echo $?")
+        try:
+            return int(status_string)
+        except ValueError:
+            print(f"Error parsing status: {status_string}")
+            return -1
+
     def _run_in_shell(self, command: str) -> str:
         self._send_to_shell(command)
         # TODO: timeout, better handling when no output immediately after command
         # this is a quick hack to prevent empty output when running send and receive immediately after
         time.sleep(0.1)
-        return self._receive_from_shell()
+        try:
+            return self._receive_from_shell()
+        except socket.timeout:
+            return "ERROR: Timeout waiting for command"
 
     def _send_to_shell(self, command: str):
         self._shell.send(f"{command}\n".encode("utf-8"))
