@@ -7,6 +7,7 @@ import message_bus
 from workspace import Workspace, DummyWorkspace
 from .message import Message
 from .save import Save
+from .user_list import UserList
 
 
 class ToolParser:
@@ -18,6 +19,7 @@ class ToolParser:
             Shell(workspace=workspace),
             Message(message_bus=message_bus),
             Save(workspace=workspace),
+            UserList(message_bus=message_bus),
         )
         self.tags_to_split_per_line = ("shell",)
         self.tools_by_name: dict[str, Tool] = {t.name: t for t in self.all_tools}
@@ -33,8 +35,8 @@ class ToolParser:
             call = ToolCall(
                 tool=self.tools_by_name[t.tag],
                 caller=caller,
-                args=(t.content,),
-                kwargs={attr[0]: attr[1] for attr in t.attrs},
+                args=(t.content,) if t.content else None,
+                kwargs={attr[0]: attr[1] for attr in t.attrs} if t.attrs else None,
             )
             tool_calls.append(call)
         return tuple(tool_calls)
