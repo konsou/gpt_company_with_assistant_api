@@ -69,6 +69,7 @@ class OpenRouterAssistant(BaseAssistant):
             new_message["role"] in user_roles
             and last_stored_message["role"] in user_roles
         ):
+            print(f"Two consecutive 'user' role messages detected, merging...")
             last_stored_message_name = self._get_message_user_name(last_stored_message)
             new_message_name = self._get_message_user_name(new_message)
 
