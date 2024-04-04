@@ -56,8 +56,10 @@ class OpenRouterAssistant(BaseAssistant):
         )
 
     def handle_bus_message(self, message: message_bus.Message):
-        if message.recipient == self.name:
+        if message.recipient.lower() == self.name.lower():
             self._add_bus_message(message)
+        else:
+            print_warning(f"{self.name} received message meant for {message.recipient}")
 
     def _add_internal_message(self, message: InternalMessage):
         print(f"{self.name} received message: {json.dumps(message)}")
