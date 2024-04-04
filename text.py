@@ -17,8 +17,16 @@ def print_employee_text(msg: str) -> None:
     print(f"{Fore.GREEN}{msg}{Style.RESET_ALL}")
 
 
+def print_info(msg: str) -> None:
+    print_in_color(msg, Color.LIGHTCYAN_EX)
+
+
 def print_warning(msg: str) -> None:
     print(f"{Fore.YELLOW}{msg}{Style.RESET_ALL}")
+
+
+def print_error(msg: str) -> None:
+    print_in_color(msg, Color.LIGHTRED_EX)
 
 
 def print_in_box(text: str, print_function: Callable = print):

@@ -9,6 +9,7 @@ import json
 import message_bus
 import workspace
 from assistants.base import BaseAssistant, InternalMessage
+from text import print_info, print_warning, print_error
 from . import types_response
 from ..tools.abc import ToolCall
 
@@ -69,7 +70,7 @@ class OpenRouterAssistant(BaseAssistant):
             new_message["role"] in user_roles
             and last_stored_message["role"] in user_roles
         ):
-            print(f"Two consecutive 'user' role messages detected, merging...")
+            print_info(f"Two consecutive 'user' role messages detected, merging...")
             last_stored_message_name = self._get_message_user_name(last_stored_message)
             new_message_name = self._get_message_user_name(new_message)
 
@@ -90,7 +91,7 @@ class OpenRouterAssistant(BaseAssistant):
         if message["role"] in ("user", "assistant", "system", "tool"):
             role = message["role"]
         else:
-            print(
+            print_warning(
                 f"Invalid role in response: {message['role']}. Changing to \"assistant\"."
             )
             role = "assistant"
@@ -127,7 +128,7 @@ class OpenRouterAssistant(BaseAssistant):
             }
         )
 
-        print(f"Sending request to {API_URL}...")
+        print_info(f"Sending request to {API_URL}...")
         tries = 3
         retry_delay = 1
         while tries:
@@ -138,7 +139,7 @@ class OpenRouterAssistant(BaseAssistant):
             try:
                 response_data = response.json()
             except requests.exceptions.JSONDecodeError:
-                print(f"Couldn't parse response")
+                print_error(f"Couldn't parse response")
                 print(response.text)
                 response_data = None
 
@@ -147,15 +148,15 @@ class OpenRouterAssistant(BaseAssistant):
                 and response_data
                 and "error" not in response_data
             ):
-                print(f"API call used model: {response_data['model']}")
+                print_info(f"API call used model: {response_data['model']}")
                 return response_data
-            print(f"Request failed: {response.status_code}")
+            print_error(f"Request failed: {response.status_code}")
             if response_data:
                 print(response_data)
-            print(f"Retrying...")
+            print_info(f"Retrying...")
             tries -= 1
             time.sleep(retry_delay)
-        print(f"No response from API")
+        print_error(f"No response from API")
         return None
 
     def select_override_model(self) -> Optional[str]:
@@ -176,7 +177,7 @@ class OpenRouterAssistant(BaseAssistant):
             )
         else:
             override_model = self.models[1]
-            print(
+            print_warning(
                 f"Model {model} sent too many ({empty_messages}) empty messages - overriding temporarily with {override_model}"
             )
             # Need to decrement counter, or we will never return to the original model
@@ -184,14 +185,17 @@ class OpenRouterAssistant(BaseAssistant):
             return override_model
 
     def process_messages(self):
+        print_info(f"{self.name} processing messages...")
         override_model = self.select_override_model()
         response = self._make_api_request(self._messages, override_model=override_model)
         if response is None:
-            print(f"{self.name}: response was empty")
+            print_warning(f"{self.name}: response was empty")
             return
         response_message: types_response.Message = self._parse_response(response)
         if not response_message["content"]:
-            print(f"{self.name}: response message from {response['model']} was empty")
+            print_warning(
+                f"{self.name}: response message from {response['model']} was empty"
+            )
             self._empty_messages_by_model[response["model"]] += 1
             return
         self._empty_messages_by_model[response["model"]] = 0
@@ -200,6 +204,7 @@ class OpenRouterAssistant(BaseAssistant):
             response_message["content"], caller=self.name
         )
         if len(tool_calls) > 1:
+            print_warning("Multiple tags detected")
             self._add_internal_message(
                 {
                     "role": "tool",
@@ -208,6 +213,7 @@ class OpenRouterAssistant(BaseAssistant):
                 }
             )
         if len(tool_calls) < 1:
+            print_warning("No tags detected")
             self._add_internal_message(
                 {
                     "role": "tool",
@@ -241,6 +247,6 @@ class OpenRouterAssistant(BaseAssistant):
         try:
             return response["choices"][0]["message"]
         except (KeyError, TypeError):
-            print(f"Invalid response")
+            print_error(f"Invalid response")
             print(f"Response was:\n{response}")
             return None
