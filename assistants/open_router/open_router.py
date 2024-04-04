@@ -57,7 +57,33 @@ class OpenRouterAssistant(BaseAssistant):
 
     def _add_internal_message(self, message: InternalMessage):
         print(f"{self.name} received message: {json.dumps(message)}")
-        self._messages.append(message)
+        self._merge_or_add_message(message)
+
+    def _merge_or_add_message(self, message: InternalMessage):
+        """OpenRouter API doesn't like multiple "user" role messages in a row.
+        Apparently "tool" messages are counted as "user" role messages as well."""
+        new_message = message
+        user_roles = ("user", "tool")
+        last_stored_message = self._messages[-1]
+        if (
+            new_message["role"] in user_roles
+            and last_stored_message["role"] in user_roles
+        ):
+            last_stored_message_name = self._get_message_user_name(last_stored_message)
+            new_message_name = self._get_message_user_name(new_message)
+
+            merged_message: InternalMessage = {
+                "role": "user",
+                "content": f"{last_stored_message_name}: {last_stored_message['content']}\n"
+                f"{new_message_name}: {new_message['content']}",
+            }
+            self._messages[-1] = merged_message
+        else:
+            self._messages.append(new_message)
+
+    def _get_message_user_name(self, message: InternalMessage) -> str:
+        default = message["role"].capitalize()
+        return message.get("name", default)
 
     def _add_response_message(self, message: types_response.Message):
         if message["role"] in ("user", "assistant", "system", "tool"):
@@ -175,17 +201,17 @@ class OpenRouterAssistant(BaseAssistant):
         if len(tool_calls) > 1:
             self._add_internal_message(
                 {
-                    "role": "assistant",
-                    "content": "(content added by system)Warning: multiple tags detected. "
-                    "Running the first, discarding others.(end content added by system)",
+                    "role": "tool",
+                    "content": "Warning: multiple tags detected. "
+                    "Running the first, discarding others.",
                 }
             )
         if len(tool_calls) < 1:
             self._add_internal_message(
                 {
-                    "role": "assistant",
-                    "content": "(content added by system)Warning: no tags detected. "
-                    "Use <message> tags for communication.(end content added by system)",
+                    "role": "tool",
+                    "content": "Warning: no tags detected. "
+                    "Use <message> tags for communication.",
                 }
             )
         # Only support one tool call per message
@@ -195,17 +221,16 @@ class OpenRouterAssistant(BaseAssistant):
         for tool_call in calls:
             self._add_internal_message(
                 {
-                    # Multiple consecutive "tool" role messages cause an error - changed to "assistant"
-                    "role": "assistant",
-                    "content": f'(content added by tool)Running tool "{tool_call.tool.name}" with arguments {tool_call.args} '
-                    f"and keyword arguments {tool_call.kwargs}(end content added by tool)",
+                    "role": "tool",
+                    "content": f')Running tool "{tool_call.tool.name}" with arguments {tool_call.args} '
+                    f"and keyword arguments {tool_call.kwargs}",
                 }
             )
             result = tool_call.call()
             self._add_internal_message(
                 {
-                    "role": "assistant",
-                    "content": f'(content added by tool)Tool run result: "{result}"(end content added by tool)',
+                    "role": "tool",
+                    "content": f'Tool run result: "{result}"',
                 }
             )
 
