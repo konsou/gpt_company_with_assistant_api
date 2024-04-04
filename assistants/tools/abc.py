@@ -16,8 +16,21 @@ class Tool(ABC):
 class ToolCall:
     tool: Tool
     caller: str
-    args: tuple
-    kwargs: dict
+    args: tuple | None
+    kwargs: dict | None
 
     def call(self) -> str:
-        return self.tool.function(*self.args, **self.kwargs, caller=self.caller)
+        # Got args and kwargs
+        if self.args is not None and self.kwargs is not None:
+            return self.tool.function(*self.args, **self.kwargs, caller=self.caller)
+
+        # Got only args
+        if self.args is not None:
+            return self.tool.function(*self.args, caller=self.caller)
+
+        # Got only kwargs
+        if self.kwargs is not None:
+            return self.tool.function(**self.kwargs, caller=self.caller)
+
+        # Got neither
+        return self.tool.function(caller=self.caller)
