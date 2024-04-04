@@ -29,7 +29,11 @@ def main():
     ass = OpenRouterAssistant(
         # models=["databricks/dbrx-instruct", "mistralai/mixtral-8x7b-instruct"],
         # model="mistralai/mixtral-8x7b-instruct",
-        models=["anthropic/claude-3-haiku:beta", "mistralai/mixtral-8x7b-instruct"],
+        models=[
+            "google/gemini-pro",
+            "anthropic/claude-3-haiku:beta",
+            "mistralai/mixtral-8x7b-instruct",
+        ],
         name="Erkki",
         role="Software Developer",
         instructions=DEVELOPER_INSTRUCTIONS,
