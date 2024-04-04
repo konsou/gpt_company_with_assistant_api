@@ -19,6 +19,9 @@ Sends a message to another user. Note that this is the only way to communicate w
 Example:
 <message recipient="John">Hello, John!</message>
 
+<userlist></userlist>
+Lists all users you can send messages to
+
 Important considerations:
   - Nested tags are not supported and will cause an error 
   - USE ONLY THESE TAGS - TEXT OUTSIDE VALID TAGS IS DISCARDED
