@@ -1,15 +1,15 @@
-from assistants.open_ai import OpenAIAssistant
+import text
 from assistants.open_router import OpenRouterAssistant
 from instructions import DEVELOPER_INSTRUCTIONS
 from message_bus import MessageBus, Message
-from text import print_system_message
+from text import print_in_color
 
 from workspace import DockerWorkspace
 
 
 def handle_message(message):
-    print_system_message(f"Received message from: {message.sender}")
-    print_system_message(message.content)
+    print_in_color(f"Received message from: {message.sender}", text.Color.GREEN)
+    print_in_color(message.content, text.Color.GREEN)
 
 
 def send_message(content, message_bus):
