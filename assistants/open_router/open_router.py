@@ -3,6 +3,7 @@ import time
 import traceback
 from typing import TypedDict, Optional, NamedTuple, Callable, Collection, Literal
 
+import dotenv
 import requests
 import json
 
@@ -12,6 +13,8 @@ from assistants.base import BaseAssistant, InternalMessage
 from text import print_info, print_warning, print_error
 from . import types_response
 from ..tools.abc import ToolCall
+
+dotenv.load_dotenv()
 
 
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -185,7 +188,7 @@ class OpenRouterAssistant(BaseAssistant):
             return override_model
 
     def process_messages(self):
-        print_info(f"{self.name} processing messages...")
+        print_info(f"---- {self.name} processing messages ----")
         override_model = self.select_override_model()
         response = self._make_api_request(self._messages, override_model=override_model)
         if response is None:
@@ -229,7 +232,7 @@ class OpenRouterAssistant(BaseAssistant):
             self._add_internal_message(
                 {
                     "role": "tool",
-                    "content": f')Running tool "{tool_call.tool.name}" with arguments {tool_call.args} '
+                    "content": f'Running tool "{tool_call.tool.name}" with arguments {tool_call.args} '
                     f"and keyword arguments {tool_call.kwargs}",
                 }
             )
